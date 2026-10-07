@@ -1,6 +1,9 @@
 <Project>
 	<PropertyGroup>
 		<Version Condition="'$(Version)' == ''">2.0.0.4</Version>
+		<!-- MSI ProductVersion requires numeric format without pre-release suffixes (e.g. 2.0.0.4 from 2.0.0.4-beta1) -->
+		<MsiVersion>$([System.Text.RegularExpressions.Regex]::Match('$(Version)', '^[0-9]+(\.[0-9]+){1,3}').Value)</MsiVersion>
+		<MsiVersion Condition="'$(MsiVersion)' == ''">$(Version)</MsiVersion>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 </Project>

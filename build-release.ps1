@@ -58,13 +58,16 @@ foreach ($arch in $Targets) {
     $rid = if ($arch -eq "ARM64") { "win-arm64" } else { "win-x64" }
     Write-Host "`n[3/4] Building binaries and installers for $arch ($rid)..." -ForegroundColor Yellow
 
+    $versionParts = $Version -split '-', 2
+    $numericVersion = $versionParts[0]
+
     # A. Dependent build
     Write-Host "  -> Publishing Dependent ($arch)..." -ForegroundColor Gray
     dotnet publish src/BrowserPicker.UI/BrowserPicker.UI.csproj `
         -c $Configuration `
         -p:Platform=$arch `
         -p:Version=$Version `
-        -p:VersionPrefix=$Version
+        -p:VersionPrefix=$numericVersion
     if ($LASTEXITCODE -ne 0) { throw "Dependent publish failed for $arch." }
 
     Write-Host "  -> Building Dependent MSI ($arch)..." -ForegroundColor Gray
@@ -72,7 +75,7 @@ foreach ($arch in $Targets) {
         --no-dependencies `
         -c $Configuration `
         -p:Platform=$arch `
-        -p:Version=$Version
+        -p:Version=$numericVersion
     if ($LASTEXITCODE -ne 0) { throw "Dependent MSI build failed for $arch." }
 
     # B. Portable build
@@ -84,7 +87,7 @@ foreach ($arch in $Targets) {
         -p:PublishSingleFile=true `
         -p:EnableCompressionInSingleFile=true `
         -p:Version=$Version `
-        -p:VersionPrefix=$Version
+        -p:VersionPrefix=$numericVersion
     if ($LASTEXITCODE -ne 0) { throw "Portable publish failed for $arch." }
 
     Write-Host "  -> Building Portable MSI ($arch)..." -ForegroundColor Gray
@@ -92,7 +95,7 @@ foreach ($arch in $Targets) {
         --no-dependencies `
         -c $Configuration `
         -p:Platform=$arch `
-        -p:Version=$Version
+        -p:Version=$numericVersion
     if ($LASTEXITCODE -ne 0) { throw "Portable MSI build failed for $arch." }
 
     # 4. Packaging into output directory

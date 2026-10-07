@@ -5,7 +5,7 @@
     <InstallerPlatform Condition="'$(InstallerPlatform)' == '' and ('$(Platform)' == 'ARM64' or '$(Platform)' == 'arm64')">arm64</InstallerPlatform>
     <InstallerPlatform Condition="'$(InstallerPlatform)' == ''">x64</InstallerPlatform>
     <OutputName Condition="'$(OutputName)' == ''">BrowserPicker-Portable</OutputName>
-    <DefineConstants>ProductVersion=$(Version)</DefineConstants>
+    <DefineConstants>ProductVersion=$(MsiVersion)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="WixToolset.NetFx.wixext" Version="6.0.2" />
