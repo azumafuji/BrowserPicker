@@ -122,8 +122,8 @@ foreach ($arch in $Targets) {
     Copy-Item (Join-Path $ArchOutputDir "Dependent.zip") (Join-Path $ResolvedOutputDir "Dependent-$arch.zip") -Force
     Copy-Item (Join-Path $ArchOutputDir "Portable.zip") (Join-Path $ResolvedOutputDir "Portable-$arch.zip") -Force
     
-    # If single target, also provide top-level non-prefixed artifacts for convenience
-    if ($Targets.Count -eq 1) {
+    # Also provide top-level non-prefixed artifacts for default architecture (x64 or single target)
+    if ($Targets.Count -eq 1 -or $arch -eq "x64") {
         Copy-Item $dependentMsi (Join-Path $ResolvedOutputDir "BrowserPicker.msi") -Force
         Copy-Item $portableMsi (Join-Path $ResolvedOutputDir "BrowserPicker-Portable.msi") -Force
         Copy-Item (Join-Path $ArchOutputDir "Dependent.zip") (Join-Path $ResolvedOutputDir "Dependent.zip") -Force

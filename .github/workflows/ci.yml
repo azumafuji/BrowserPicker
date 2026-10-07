@@ -8,9 +8,173 @@ permissions:
   contents: read
 
 jobs:
-  ci:
-    permissions:
-      contents: read
-    uses: mortenn/BrowserPicker.Actions/.github/workflows/ci.yml@1f35242bb89d3bc12c83ca4bd4727f3414204340
-    with:
-      dotnet_version: 10.x
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      version_suffix: beta${{ steps.version.outputs.increment }}
+      package_version: ${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}.${{ steps.version.outputs.patch }}.${{ steps.version.outputs.increment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        uses: paulhatch/semantic-version@9f72830310d5ed81233b641ee59253644cd8a8fc # v6.0.2
+        with:
+          version_format: "${major}.${minor}.${patch}"
+
+  schema:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        with:
+          dotnet-version: "10.x"
+
+      - name: Generate settings schema
+        run: dotnet run --project tools/BrowserPicker.SchemaGen/BrowserPicker.SchemaGen.csproj -- schemas/browserpicker-settings.schema.json
+
+      - name: Verify generated schema is committed
+        run: git diff --exit-code -- schemas/browserpicker-settings.schema.json
+
+      - name: Upload schema artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: BrowserPicker-settings-schema
+          path: schemas/browserpicker-settings.schema.json
+
+  tests:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        platform: [x64, ARM64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        with:
+          dotnet-version: "10.x"
+
+      - name: Run tests (${{ matrix.platform }})
+        run: dotnet test tests/BrowserPicker.Common.Tests/BrowserPicker.Common.Tests.csproj -p:Platform=${{ matrix.platform }} -p:Version=1.0.0 --logger "trx;LogFileName=dotnet-test-${{ matrix.platform }}.trx" --results-directory test-results
+
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: dotnet-test-results-${{ matrix.platform }}
+          path: test-results
+
+  dependent:
+    runs-on: windows-latest
+    needs: prepare
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+        platform: [x64, ARM64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        with:
+          dotnet-version: "10.x"
+
+      - name: Restore tools
+        shell: bash
+        run: dotnet tool restore
+
+      - name: Restore application
+        shell: bash
+        run: dotnet restore BrowserPicker.sln -p:Platform=${{ matrix.platform }} -p VersionPrefix=${{ needs.prepare.outputs.version }} -p VersionSuffix=${{ needs.prepare.outputs.version_suffix }}
+
+      - name: Publish application
+        shell: bash
+        run: dotnet publish -c ${{ matrix.configuration }} -p:Platform=${{ matrix.platform }} src/BrowserPicker.UI/BrowserPicker.UI.csproj -p VersionPrefix=${{ needs.prepare.outputs.version }} -p VersionSuffix=${{ needs.prepare.outputs.version_suffix }}
+
+      - name: Create installer
+        shell: bash
+        run: dotnet build dist/Dependent/Dependent.wixproj --no-dependencies -c ${{ matrix.configuration }} -p:Platform=${{ matrix.platform }} -p Version=${{ needs.prepare.outputs.package_version }}
+
+      - name: Upload msi
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: DependentSetup-${{ needs.prepare.outputs.version }}-${{ matrix.platform }}-${{ matrix.configuration }}
+          path: dist/Dependent/bin/${{ matrix.platform }}/${{ matrix.configuration }}/BrowserPicker.msi
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Dependent-${{ needs.prepare.outputs.version }}-${{ matrix.platform }}-${{ matrix.configuration }}
+          path: src/BrowserPicker.UI/bin/${{ matrix.platform }}/${{ matrix.configuration }}/net10.0-windows/publish
+
+  portable:
+    runs-on: windows-latest
+    needs: prepare
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+        include:
+          - platform: x64
+            rid: win-x64
+            configuration: Debug
+          - platform: x64
+            rid: win-x64
+            configuration: Release
+          - platform: ARM64
+            rid: win-arm64
+            configuration: Debug
+          - platform: ARM64
+            rid: win-arm64
+            configuration: Release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        with:
+          dotnet-version: "10.x"
+
+      - name: Restore tools
+        shell: bash
+        run: dotnet tool restore
+
+      - name: Restore application
+        shell: bash
+        run: dotnet restore BrowserPicker.sln -p:Platform=${{ matrix.platform }} -p VersionPrefix=${{ needs.prepare.outputs.version }} -p VersionSuffix=${{ needs.prepare.outputs.version_suffix }} -r ${{ matrix.rid }} -p:PublishSingleFile=true
+
+      - name: Publish application
+        shell: bash
+        run: dotnet publish -c ${{ matrix.configuration }} -r ${{ matrix.rid }} -p:Platform=${{ matrix.platform }} src/BrowserPicker.UI/BrowserPicker.UI.csproj -p VersionPrefix=${{ needs.prepare.outputs.version }} -p VersionSuffix=${{ needs.prepare.outputs.version_suffix }} -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+
+      - name: Create installer
+        shell: bash
+        run: dotnet build dist/Portable/Portable.wixproj --no-dependencies -c ${{ matrix.configuration }} -p:Platform=${{ matrix.platform }} -p Version=${{ needs.prepare.outputs.package_version }}
+
+      - name: Upload msi
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: PortableSetup-${{ needs.prepare.outputs.version }}-${{ matrix.platform }}-${{ matrix.configuration }}
+          path: dist/Portable/bin/${{ matrix.platform }}/${{ matrix.configuration }}/BrowserPicker-Portable.msi
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Portable-${{ needs.prepare.outputs.version }}-${{ matrix.platform }}-${{ matrix.configuration }}
+          path: src/BrowserPicker.UI/bin/${{ matrix.platform }}/${{ matrix.configuration }}/net10.0-windows/${{ matrix.rid }}/publish

@@ -9,8 +9,144 @@ permissions:
 
 jobs:
   validate:
-    permissions:
-      contents: read
-    uses: mortenn/BrowserPicker.Actions/.github/workflows/pr-validation.yml@1f35242bb89d3bc12c83ca4bd4727f3414204340
-    with:
-      dotnet_version: 10.x
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        with:
+          dotnet-version: "10.x"
+
+      - name: Restore tools
+        shell: bash
+        run: dotnet tool restore
+
+      - name: Check CSharpier formatting
+        id: csharpier
+        shell: bash
+        run: |
+          set +e
+          dotnet csharpier check . 2>&1 | tee csharpier.log
+          exit_code=${PIPESTATUS[0]}
+          echo "exit_code=${exit_code}" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Check XAML formatting
+        id: xamlstyler
+        shell: bash
+        run: |
+          set +e
+          dotnet xstyler -r -d src -p 2>&1 | tee xamlstyler.log
+          exit_code=${PIPESTATUS[0]}
+          echo "exit_code=${exit_code}" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Run tests (x64)
+        id: tests_x64
+        shell: bash
+        run: |
+          set +e
+          dotnet test tests/BrowserPicker.Common.Tests/BrowserPicker.Common.Tests.csproj -p:Platform=x64 -p:Version=1.0.0 --logger "trx;LogFileName=dotnet-test-x64.trx" --results-directory test-results 2>&1 | tee dotnet-test-x64.log
+          exit_code=${PIPESTATUS[0]}
+          echo "exit_code=${exit_code}" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Run tests (ARM64)
+        id: tests_arm64
+        shell: bash
+        run: |
+          set +e
+          dotnet test tests/BrowserPicker.Common.Tests/BrowserPicker.Common.Tests.csproj -p:Platform=ARM64 -p:Version=1.0.0 --logger "trx;LogFileName=dotnet-test-arm64.trx" --results-directory test-results 2>&1 | tee dotnet-test-arm64.log
+          exit_code=${PIPESTATUS[0]}
+          echo "exit_code=${exit_code}" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Build PR validation summary
+        if: ${{ always() }}
+        shell: bash
+        env:
+          CSHARPIER_EXIT_CODE: ${{ steps.csharpier.outputs.exit_code || '1' }}
+          XAMLSTYLER_EXIT_CODE: ${{ steps.xamlstyler.outputs.exit_code || '1' }}
+          TESTS_X64_EXIT_CODE: ${{ steps.tests_x64.outputs.exit_code || '1' }}
+          TESTS_ARM64_EXIT_CODE: ${{ steps.tests_arm64.outputs.exit_code || '1' }}
+        run: |
+          mkdir -p pr-validation-summary
+
+          format_status() {
+            if [ "$1" = "0" ]; then
+              echo "success"
+            else
+              echo "failure"
+            fi
+          }
+
+          summarize_log() {
+            local label="$1"
+            local file="$2"
+
+            {
+              echo "### ${label}"
+              echo
+              echo "<details><summary>Output</summary>"
+              echo
+              echo '```text'
+              if [ -f "$file" ]; then
+                sed -n '1,120p' "$file"
+              else
+                echo "No output captured."
+              fi
+              echo '```'
+              echo
+              echo "</details>"
+              echo
+            } >> pr-validation-summary/summary.md
+          }
+
+          {
+            echo "<!-- pr-validation-summary -->"
+            echo "## PR Validation"
+            echo
+            echo "| Check | Result |"
+            echo "| --- | --- |"
+            echo "| CSharpier | $(format_status "${CSHARPIER_EXIT_CODE}") |"
+            echo "| XamlStyler | $(format_status "${XAMLSTYLER_EXIT_CODE}") |"
+            echo "| dotnet test (x64) | $(format_status "${TESTS_X64_EXIT_CODE}") |"
+            echo "| dotnet test (ARM64) | $(format_status "${TESTS_ARM64_EXIT_CODE}") |"
+            echo
+          } > pr-validation-summary/summary.md
+
+          summarize_log "CSharpier" "csharpier.log"
+          summarize_log "XamlStyler" "xamlstyler.log"
+          summarize_log "dotnet test (x64)" "dotnet-test-x64.log"
+          summarize_log "dotnet test (ARM64)" "dotnet-test-arm64.log"
+
+      - name: Upload PR validation summary
+        if: ${{ always() }}
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: pr-validation-summary
+          path: pr-validation-summary
+
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: dotnet-test-results
+          path: test-results
+
+      - name: Fail when validation checks fail
+        if: ${{ always() }}
+        shell: bash
+        env:
+          CSHARPIER_EXIT_CODE: ${{ steps.csharpier.outputs.exit_code || '1' }}
+          XAMLSTYLER_EXIT_CODE: ${{ steps.xamlstyler.outputs.exit_code || '1' }}
+          TESTS_X64_EXIT_CODE: ${{ steps.tests_x64.outputs.exit_code || '1' }}
+          TESTS_ARM64_EXIT_CODE: ${{ steps.tests_arm64.outputs.exit_code || '1' }}
+        run: |
+          if [ "${CSHARPIER_EXIT_CODE}" != "0" ] || [ "${XAMLSTYLER_EXIT_CODE}" != "0" ] || [ "${TESTS_X64_EXIT_CODE}" != "0" ] || [ "${TESTS_ARM64_EXIT_CODE}" != "0" ]; then
+            exit 1
+          fi

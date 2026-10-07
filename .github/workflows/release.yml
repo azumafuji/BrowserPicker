@@ -6,12 +6,58 @@ on:
       - "v*.*.*"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   release:
+    runs-on: windows-latest
     permissions:
       contents: write
-    uses: mortenn/BrowserPicker.Actions/.github/workflows/release.yml@acb9b119377245e0bb213408e8da15f7b0a678b5
-    with:
-      dotnet_version: 10.x
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Determine version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $ver = $tag -replace '^v',''
+          echo "version=$ver" >> $env:GITHUB_OUTPUT
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        with:
+          dotnet-version: "10.x"
+
+      - name: Restore tools
+        shell: pwsh
+        run: dotnet tool restore
+
+      - name: Build All Architectures (x64 and ARM64)
+        shell: pwsh
+        run: |
+          ./build-release.ps1 -Architecture All -Version ${{ steps.version.outputs.version }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
+        with:
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          files: |
+            release/BrowserPicker-x64.msi
+            release/BrowserPicker-ARM64.msi
+            release/BrowserPicker-Portable-x64.msi
+            release/BrowserPicker-Portable-ARM64.msi
+            release/BrowserPicker.msi
+            release/BrowserPicker-Portable.msi
+            release/Dependent-x64.zip
+            release/Dependent-ARM64.zip
+            release/Dependent.zip
+            release/Portable-x64.zip
+            release/Portable-ARM64.zip
+            release/Portable.zip
+            release/browserpicker-settings.schema.json
