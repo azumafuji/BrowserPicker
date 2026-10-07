@@ -22,7 +22,7 @@
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' or '$(Configuration)|$(Platform)' == 'Debug|ARM64' ">
-    <DefineConstants>Debug</DefineConstants>
+    <DefineConstants>$(DefineConstants);Debug</DefineConstants>
     <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
@@ -30,4 +30,11 @@
     <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
-</Project>
+  <Target Name="CopyMsiToConfigDir" AfterTargets="Build">
+    <Copy
+      SourceFiles="$(OutputPath)$(OutputName).msi"
+      DestinationFiles="bin\$(Configuration)\$(OutputName).msi"
+      Condition="Exists('$(OutputPath)$(OutputName).msi') and '$(OutputPath)' != 'bin\$(Configuration)\'"
+      ContinueOnError="true" />
+  </Target>
+</Project>

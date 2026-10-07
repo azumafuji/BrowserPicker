@@ -97,8 +97,16 @@ foreach ($arch in $Targets) {
 
     $dependentPublishDir = "src/BrowserPicker.UI/bin/$arch/$Configuration/net10.0-windows/publish"
     $portablePublishDir  = "src/BrowserPicker.UI/bin/$arch/$Configuration/net10.0-windows/$rid/publish"
-    $dependentMsi        = "dist/Dependent/bin/$arch/$Configuration/BrowserPicker.msi"
-    $portableMsi         = "dist/Portable/bin/$arch/$Configuration/BrowserPicker-Portable.msi"
+    $dependentMsi = if (Test-Path "dist/Dependent/bin/$arch/$Configuration/BrowserPicker.msi") {
+        "dist/Dependent/bin/$arch/$Configuration/BrowserPicker.msi"
+    } else {
+        "dist/Dependent/bin/$Configuration/BrowserPicker.msi"
+    }
+    $portableMsi = if (Test-Path "dist/Portable/bin/$arch/$Configuration/BrowserPicker-Portable.msi") {
+        "dist/Portable/bin/$arch/$Configuration/BrowserPicker-Portable.msi"
+    } else {
+        "dist/Portable/bin/$Configuration/BrowserPicker-Portable.msi"
+    }
 
     # Zip bundles
     Compress-Archive -Path "$dependentPublishDir/*" -DestinationPath (Join-Path $ArchOutputDir "Dependent.zip") -Force
