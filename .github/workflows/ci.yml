@@ -53,9 +53,6 @@ jobs:
 
   tests:
     runs-on: windows-latest
-    strategy:
-      matrix:
-        platform: [x64, ARM64]
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -65,14 +62,17 @@ jobs:
         with:
           dotnet-version: "10.x"
 
-      - name: Run tests (${{ matrix.platform }})
-        run: dotnet test tests/BrowserPicker.Common.Tests/BrowserPicker.Common.Tests.csproj -p:Platform=${{ matrix.platform }} -p:Version=1.0.0 --logger "trx;LogFileName=dotnet-test-${{ matrix.platform }}.trx" --results-directory test-results
+      - name: Run tests (x64)
+        run: dotnet test tests/BrowserPicker.Common.Tests/BrowserPicker.Common.Tests.csproj -p:Platform=x64 -p:Version=1.0.0 --logger "trx;LogFileName=dotnet-test-x64.trx" --results-directory test-results
+
+      - name: Verify test project build (ARM64)
+        run: dotnet build tests/BrowserPicker.Common.Tests/BrowserPicker.Common.Tests.csproj -p:Platform=ARM64 -p:Version=1.0.0
 
       - name: Upload test results
         if: ${{ always() }}
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          name: dotnet-test-results-${{ matrix.platform }}
+          name: dotnet-test-results
           path: test-results
 
   dependent:

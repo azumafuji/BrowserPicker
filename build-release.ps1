@@ -32,10 +32,17 @@ if ($LASTEXITCODE -ne 0) { throw "Schema generation failed." }
 
 # 2. Run unit tests
 Write-Host "`n[2/4] Running tests..." -ForegroundColor Yellow
+$hostIsArm64 = $env:PROCESSOR_ARCHITECTURE -match 'ARM64'
 foreach ($arch in $Targets) {
-    Write-Host "Testing platform: $arch" -ForegroundColor Gray
-    dotnet test tests/BrowserPicker.Common.Tests/BrowserPicker.Common.Tests.csproj -c $Configuration -p:Platform=$arch
-    if ($LASTEXITCODE -ne 0) { throw "Tests failed for $arch." }
+    if ($arch -eq "ARM64" -and -not $hostIsArm64) {
+        Write-Host "Verifying test project build for $arch (skipping execution on x64 host)..." -ForegroundColor Gray
+        dotnet build tests/BrowserPicker.Common.Tests/BrowserPicker.Common.Tests.csproj -c $Configuration -p:Platform=$arch
+        if ($LASTEXITCODE -ne 0) { throw "Test project build failed for $arch." }
+    } else {
+        Write-Host "Testing platform: $arch..." -ForegroundColor Gray
+        dotnet test tests/BrowserPicker.Common.Tests/BrowserPicker.Common.Tests.csproj -c $Configuration -p:Platform=$arch
+        if ($LASTEXITCODE -ne 0) { throw "Tests failed for $arch." }
+    }
 }
 
 $ResolvedOutputDir = Join-Path $RepoRoot $OutputDir

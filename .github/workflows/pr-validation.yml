@@ -55,12 +55,12 @@ jobs:
           echo "exit_code=${exit_code}" >> "$GITHUB_OUTPUT"
           exit 0
 
-      - name: Run tests (ARM64)
-        id: tests_arm64
+      - name: Verify build (ARM64)
+        id: build_arm64
         shell: bash
         run: |
           set +e
-          dotnet test tests/BrowserPicker.Common.Tests/BrowserPicker.Common.Tests.csproj -p:Platform=ARM64 -p:Version=1.0.0 --logger "trx;LogFileName=dotnet-test-arm64.trx" --results-directory test-results 2>&1 | tee dotnet-test-arm64.log
+          dotnet build tests/BrowserPicker.Common.Tests/BrowserPicker.Common.Tests.csproj -p:Platform=ARM64 -p:Version=1.0.0 2>&1 | tee dotnet-build-arm64.log
           exit_code=${PIPESTATUS[0]}
           echo "exit_code=${exit_code}" >> "$GITHUB_OUTPUT"
           exit 0
@@ -72,7 +72,7 @@ jobs:
           CSHARPIER_EXIT_CODE: ${{ steps.csharpier.outputs.exit_code || '1' }}
           XAMLSTYLER_EXIT_CODE: ${{ steps.xamlstyler.outputs.exit_code || '1' }}
           TESTS_X64_EXIT_CODE: ${{ steps.tests_x64.outputs.exit_code || '1' }}
-          TESTS_ARM64_EXIT_CODE: ${{ steps.tests_arm64.outputs.exit_code || '1' }}
+          BUILD_ARM64_EXIT_CODE: ${{ steps.build_arm64.outputs.exit_code || '1' }}
         run: |
           mkdir -p pr-validation-summary
 
@@ -115,14 +115,14 @@ jobs:
             echo "| CSharpier | $(format_status "${CSHARPIER_EXIT_CODE}") |"
             echo "| XamlStyler | $(format_status "${XAMLSTYLER_EXIT_CODE}") |"
             echo "| dotnet test (x64) | $(format_status "${TESTS_X64_EXIT_CODE}") |"
-            echo "| dotnet test (ARM64) | $(format_status "${TESTS_ARM64_EXIT_CODE}") |"
+            echo "| dotnet build (ARM64) | $(format_status "${BUILD_ARM64_EXIT_CODE}") |"
             echo
           } > pr-validation-summary/summary.md
 
           summarize_log "CSharpier" "csharpier.log"
           summarize_log "XamlStyler" "xamlstyler.log"
           summarize_log "dotnet test (x64)" "dotnet-test-x64.log"
-          summarize_log "dotnet test (ARM64)" "dotnet-test-arm64.log"
+          summarize_log "dotnet build (ARM64)" "dotnet-build-arm64.log"
 
       - name: Upload PR validation summary
         if: ${{ always() }}
@@ -145,8 +145,8 @@ jobs:
           CSHARPIER_EXIT_CODE: ${{ steps.csharpier.outputs.exit_code || '1' }}
           XAMLSTYLER_EXIT_CODE: ${{ steps.xamlstyler.outputs.exit_code || '1' }}
           TESTS_X64_EXIT_CODE: ${{ steps.tests_x64.outputs.exit_code || '1' }}
-          TESTS_ARM64_EXIT_CODE: ${{ steps.tests_arm64.outputs.exit_code || '1' }}
+          BUILD_ARM64_EXIT_CODE: ${{ steps.build_arm64.outputs.exit_code || '1' }}
         run: |
-          if [ "${CSHARPIER_EXIT_CODE}" != "0" ] || [ "${XAMLSTYLER_EXIT_CODE}" != "0" ] || [ "${TESTS_X64_EXIT_CODE}" != "0" ] || [ "${TESTS_ARM64_EXIT_CODE}" != "0" ]; then
+          if [ "${CSHARPIER_EXIT_CODE}" != "0" ] || [ "${XAMLSTYLER_EXIT_CODE}" != "0" ] || [ "${TESTS_X64_EXIT_CODE}" != "0" ] || [ "${BUILD_ARM64_EXIT_CODE}" != "0" ]; then
             exit 1
           fi
