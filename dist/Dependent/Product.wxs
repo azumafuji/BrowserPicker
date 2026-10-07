@@ -2,7 +2,7 @@
 	xmlns="http://wixtoolset.org/schemas/v4/wxs"
 	xmlns:netfx="http://wixtoolset.org/schemas/v4/wxs/netfx"
 	xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
-	<Package Name="BrowserPicker" Language="1033" Version="$(var.ProductVersion)" Manufacturer="Runsafe" UpgradeCode="{31e74d4e-57dd-4786-beb8-b9b8188f2764}" InstallerVersion="200">
+	<Package Name="BrowserPicker" Language="1033" Version="$(var.ProductVersion)" Manufacturer="Runsafe" UpgradeCode="{31e74d4e-57dd-4786-beb8-b9b8188f2764}" InstallerVersion="500">
 
 		<MajorUpgrade Schedule="afterInstallInitialize" AllowDowngrades="yes" />
 		<MediaTemplate EmbedCab="yes" />
@@ -19,7 +19,7 @@
 		<netfx:DotNetCompatibilityCheck
 			Id="netCoreStatus"
 			Property="NETCORESTATUS" RollForward="latestMajor"
-			RuntimeType="core" Version="10.0.0" Platform="x64" />
+			RuntimeType="core" Version="10.0.0" Platform="$(sys.BUILDARCH)" />
 		<Launch
 			Condition="Installed OR NETCORESTATUS=&quot;0&quot;"
 			Message="[ProductName] requires Microsoft .NET Core - 10.0.0 or greater." />
@@ -50,7 +50,7 @@
 						KeyPath="yes"/>
 			</Component>
 			<Component Bitness="always64">
-				<File Id="BrowserPicker.exe" Name="$(var.BrowserPicker.UI.TargetName).exe" KeyPath="yes" ProcessorArchitecture="x64">
+				<File Id="BrowserPicker.exe" Name="$(var.BrowserPicker.UI.TargetName).exe" KeyPath="yes" ProcessorArchitecture="$(sys.BUILDARCH)">
 					<netfx:NativeImage Id="ngen_$(var.BrowserPicker.UI.TargetName).exe" Platform="64bit" Priority="0" AppBaseDirectory="INSTALLFOLDER" />
 					<Shortcut Directory="ApplicationProgramsFolder" Id="ApplicationStartMenuShortcut" Name="Browser Picker" Description="Awesome Browser Picker" WorkingDirectory="INSTALLFOLDER" Icon="Icon.exe" Advertise="yes" />
 				</File>

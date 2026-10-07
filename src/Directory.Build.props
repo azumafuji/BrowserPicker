@@ -6,7 +6,7 @@
     <Company>Runsafe</Company>
     <Copyright>Copyright © Morten Nilsen 2017-2026</Copyright>
     <Configurations>Debug;Release</Configurations>
-    <Platforms>x64</Platforms>
+    <Platforms>x64;ARM64</Platforms>
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
     <Nullable>enable</Nullable>
     <!-- UseArtifactsOutput not supported by WixToolset.Sdk -->
@@ -17,6 +17,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(BrowserPickerPortable)' == 'true'">
     <DefineConstants>$(DefineConstants);BROWSERPICKER_PORTABLE</DefineConstants>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'SignedRelease|AnyCPU'">
     <OutputPath>bin\SignedRelease\</OutputPath>

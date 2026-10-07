@@ -14,7 +14,7 @@ To enable the browser picker window, you need to set Browser Picker as your defa
 
 ### .NET Runtime dependent binary
 BrowserPicker.msi and Dependent.zip are JIT compiled and require you have the [.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) installed.
-Direct links: [64bit systems](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-10.0.5-windows-x64-installer), [32bit systems](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-10.0.5-windows-x86-installer).
+Direct links: [64bit systems](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-10.0.5-windows-x64-installer), [ARM64 systems](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-10.0.5-windows-arm64-installer), [32bit systems](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-10.0.5-windows-x86-installer).
 
 #### Native image generation
 As part of installation, `BrowserPicker.msi` will execute ngen to build a native image for your computer.  
@@ -24,7 +24,7 @@ If you prefer the bundle, you may run `ngen install BrowserPicker.exe` to get th
 ### Portable binary
 If you do not want to have the .net runtime installed on your computer, you may download the Portable version, which includes the runtime.
 
-`BrowserPicker-Portable.msi` and `Portable.zip` contain a win-x64 binary executable with embedded .NET runtime.  
+`BrowserPicker-Portable.msi` and `Portable.zip` contain a self-contained binary executable (`win-x64` or `win-arm64`) with embedded .NET runtime.  
 This makes the file sizes quite significantly larger, but you do not need an additional runtime to use these.
 
 #### Portable default browser registration

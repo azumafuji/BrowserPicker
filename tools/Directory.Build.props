@@ -3,7 +3,7 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <Company>Runsafe</Company>
     <Copyright>Copyright © Morten Nilsen 2017-2026</Copyright>
-    <Platforms>x64</Platforms>
+    <Platforms>x64;ARM64</Platforms>
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

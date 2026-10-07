@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
 	x:Class="BrowserPicker.UI.Views.Configuration"
 	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -782,10 +782,10 @@
 
 			<TabItem Header="Test defaults">
 				<ScrollViewer Padding="4" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-					<Grid>
+					<Grid Margin="10" VerticalAlignment="Top">
 						<Grid.RowDefinitions>
 							<RowDefinition Height="Auto" />
-							<RowDefinition Height="*" />
+							<RowDefinition Height="Auto" />
 							<RowDefinition Height="Auto" />
 							<RowDefinition Height="Auto" />
 						</Grid.RowDefinitions>
@@ -793,15 +793,38 @@
 							<ColumnDefinition Width="Auto" />
 							<ColumnDefinition Width="*" />
 						</Grid.ColumnDefinitions>
-						<TextBlock Text="URL:" />
+						<TextBlock Margin="0,0,0,4" Text="URL:" />
 
-						<TextBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding TestDefaultsURL, UpdateSourceTrigger=PropertyChanged}" />
+						<TextBox
+							Grid.Row="1"
+							Grid.Column="0"
+							Grid.ColumnSpan="2"
+							Margin="0,0,0,12"
+							Text="{Binding TestDefaultsURL, UpdateSourceTrigger=PropertyChanged}" />
 
-						<TextBlock Grid.Row="2" Grid.Column="0" Text="Default browser matched:" />
-						<TextBlock Grid.Row="2" Grid.Column="1" Foreground="LightGreen" Text="{Binding TestDefaultsResult}" />
+						<TextBlock
+							Grid.Row="2"
+							Grid.Column="0"
+							Margin="0,0,8,6"
+							Text="Default browser matched:" />
+						<TextBlock
+							Grid.Row="2"
+							Grid.Column="1"
+							Margin="0,0,0,6"
+							Foreground="LightGreen"
+							Text="{Binding TestDefaultsResult}" />
 
-						<TextBlock Grid.Row="3" Grid.Column="0" Text="Actual browser choice:" />
-						<TextBlock Grid.Row="3" Grid.Column="1" Foreground="LightGreen" Text="{Binding TestActualResult}" />
+						<TextBlock
+							Grid.Row="3"
+							Grid.Column="0"
+							Margin="0,0,8,6"
+							Text="Actual browser choice:" />
+						<TextBlock
+							Grid.Row="3"
+							Grid.Column="1"
+							Margin="0,0,0,6"
+							Foreground="LightGreen"
+							Text="{Binding TestActualResult}" />
 					</Grid>
 				</ScrollViewer>
 			</TabItem>
